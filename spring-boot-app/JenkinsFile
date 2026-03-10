@@ -6,17 +6,20 @@ pipeline {
         }
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/anoopofficial91-create/cicd-automation-jenkins.git'
-            }
-        }
+    environment {
+        GITHUB_TOKEN = credentials('github')   // must be Secret Text
+    }
 
+    options {
+        skipDefaultCheckout(false)   // checkout once globally
+    }
+
+    stages {
         stage('Build and Test') {
             steps {
-                sh 'cd spring-boot-app && mvn clean package'
+                dir('spring-boot-app') {
+                    sh 'mvn clean package'
+                }
             }
         }
 
@@ -25,8 +28,14 @@ pipeline {
                 SONAR_URL = "http://52.91.163.242:9000"
             }
             steps {
-                withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-                    sh 'cd spring-boot-app && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+                dir('spring-boot-app') {
+                    withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+                        sh '''
+                            mvn sonar:sonar \
+                              -Dsonar.login=$SONAR_AUTH_TOKEN \
+                              -Dsonar.host.url=${SONAR_URL}
+                        '''
+                    }
                 }
             }
         }
@@ -36,11 +45,13 @@ pipeline {
                 DOCKER_IMAGE = "anoop8cd/ultimate-cicd:${BUILD_NUMBER}"
             }
             steps {
-                script {
-                    sh 'cd spring-boot-app && docker build -t ${DOCKER_IMAGE} .'
-                    def dockerImage = docker.image("${DOCKER_IMAGE}")
-                    docker.withRegistry('https://index.docker.io/v1/', "docker-cred") {
-                        dockerImage.push()
+                dir('spring-boot-app') {
+                    script {
+                        sh "docker build -t ${DOCKER_IMAGE} ."
+                        def dockerImage = docker.image("${DOCKER_IMAGE}")
+                        docker.withRegistry('https://index.docker.io/v1/', "docker-cred") {
+                            dockerImage.push()
+                        }
                     }
                 }
             }
@@ -49,18 +60,16 @@ pipeline {
         stage('Update Deployment File') {
             steps {
                 dir('spring-boot-app-manifests') {
-                    withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
-                        sh '''
-                            git config user.email "anoopofficial91@gmail.com"
-                            git config user.name "Anoop VP"
+                    sh '''
+                        git config user.email "anoopofficial91@gmail.com"
+                        git config user.name "Anoop VP"
 
-                            sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" deployment.yml
+                        sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" deployment.yml
 
-                            git add deployment.yml
-                            git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-                            git push https://${GITHUB_TOKEN}@github.com/anoopofficial91-create/cicd-automation-jenkins HEAD:main
-                        '''
-                    }
+                        git add deployment.yml
+                        git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+                        git push https://${GITHUB_TOKEN}@github.com/anoopofficial91-create/cicd-automation-jenkins HEAD:main
+                    '''
                 }
             }
         }
