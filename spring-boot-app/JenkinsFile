@@ -5,12 +5,14 @@ agent {
         args '--user root -v /var/run/docker.sock:/var/run/docker.sock'
     }
 }
-  stages {
-    stage('Checkout') {
-      steps {
-        sh 'echo passed'
-        //git branch: 'main', url: 'https://github.com/anoopofficial91-create/cicd-automation-jenkins.git'
-      }
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout the repo once at the start
+                git branch: 'main',
+                    url: 'https://github.com/anoopofficial91-create/cicd-automation-jenkins.git'
+            }
+
     }
     stage('Build and Test') {
       steps {
