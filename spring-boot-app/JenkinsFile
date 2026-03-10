@@ -1,54 +1,56 @@
 pipeline {
-agent {
-    docker {
-        image 'anoop8cd/maven-docker-agent:latest'
-        args '--user root -v /var/run/docker.sock:/var/run/docker.sock'
+    agent {
+        docker {
+            image 'anoop8cd/maven-docker-agent:latest'
+            args '--user root -v /var/run/docker.sock:/var/run/docker.sock'
+        }
     }
-}
+
+    environment {
+        GITHUB_TOKEN = credentials('github-token')
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the repo once at the start
                 git branch: 'main',
                     url: 'https://github.com/anoopofficial91-create/cicd-automation-jenkins.git'
             }
-
-    }
-    stage('Build and Test') {
-      steps {
-        sh 'pwd'        
-        sh 'ls -ltr'
-        // build the project and create a JAR file
-        sh 'cd spring-boot-app && mvn clean package'
-      }
-    }
-    stage('Static Code Analysis') {
-      environment {
-        SONAR_URL = "http://52.91.163.242:9000"
-      }
-      steps {
-        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-          sh 'cd spring-boot-app && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
         }
-      }
-    }
-    stage('Build and Push Docker Image') {
-      environment {
-        DOCKER_IMAGE = "anoop8cd/ultimate-cicd:${BUILD_NUMBER}"
-        // DOCKERFILE_LOCATION = "spring-boot-app/Dockerfile"
-        REGISTRY_CREDENTIALS = credentials('docker-cred')
-      }
-      steps {
-        script {
-            sh 'cd spring-boot-app && docker build -t ${DOCKER_IMAGE} .'
-            def dockerImage = docker.image("${DOCKER_IMAGE}")
-            docker.withRegistry('https://index.docker.io/v1/', "docker-cred") {
-                dockerImage.push()
+
+        stage('Build and Test') {
+            steps {
+                sh 'cd spring-boot-app && mvn clean package'
             }
         }
-      }
-    }
-    stage('Update Deployment File') {
+
+        stage('Static Code Analysis') {
+            environment {
+                SONAR_URL = "http://52.91.163.242:9000"
+            }
+            steps {
+                withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+                    sh 'cd spring-boot-app && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+                }
+            }
+        }
+
+        stage('Build and Push Docker Image') {
+            environment {
+                DOCKER_IMAGE = "anoop8cd/ultimate-cicd:${BUILD_NUMBER}"
+            }
+            steps {
+                script {
+                    sh 'cd spring-boot-app && docker build -t ${DOCKER_IMAGE} .'
+                    def dockerImage = docker.image("${DOCKER_IMAGE}")
+                    docker.withRegistry('https://index.docker.io/v1/', "docker-cred") {
+                        dockerImage.push()
+                    }
+                }
+            }
+        }
+
+        stage('Update Deployment File') {
             steps {
                 dir('spring-boot-app-manifests') {
                     withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
@@ -63,8 +65,8 @@ agent {
                             git push https://${GITHUB_TOKEN}@github.com/anoopofficial91-create/cicd-automation-jenkins HEAD:main
                         '''
                     }
-
+                }
+            }
         }
     }
-  }
 }
