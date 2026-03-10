@@ -65,6 +65,10 @@ pipeline {
         }
 
         stage('Update Deployment File') {
+ environment {
+            GIT_REPO_NAME = "cicd-automation-jenkins"
+            GIT_USER_NAME = "anoopofficial91-create"
+        }
             steps {
                 // run from repo root so .git is visible
                 sh '''
