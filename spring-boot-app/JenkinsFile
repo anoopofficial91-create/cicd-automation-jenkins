@@ -49,22 +49,21 @@ agent {
       }
     }
     stage('Update Deployment File') {
-        environment {
-            GIT_REPO_NAME = "cicd-automation-jenkins"
-            GIT_USER_NAME = "anoopofficial91-create"
-        }
-        steps {
-            withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
-                sh '''
-                    git config user.email "anoopofficial91@gmail.com"
-                    git config user.name "Anoop VP"
-                    BUILD_NUMBER=${BUILD_NUMBER}
-                    sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" spring-boot-app-manifests/deployment.yml
-                    git add spring-boot-app-manifests/deployment.yml
-                    git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
-                '''
-            }
+            steps {
+                dir('spring-boot-app-manifests') {
+                    withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+                        sh '''
+                            git config user.email "anoopofficial91@gmail.com"
+                            git config user.name "Anoop VP"
+
+                            sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" deployment.yml
+
+                            git add deployment.yml
+                            git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+                            git push https://${GITHUB_TOKEN}@github.com/anoopofficial91-create/cicd-automation-jenkins HEAD:main
+                        '''
+                    }
+
         }
     }
   }
