@@ -66,21 +66,21 @@ pipeline {
         }
 
         stage('Update Deployment File') {
-            steps {
-                // force checkout again to ensure .git is present
-                checkout scm
-                sh '''
-                    git config user.email "anoopofficial91@gmail.com"
-                    git config user.name "Anoop VP"
+    agent any   // run on Jenkins host, not inside Docker
+    steps {
+        checkout scm   // ensure repo is present
+        sh '''
+            git config user.email "anoopofficial91@gmail.com"
+            git config user.name "Anoop VP"
 
-                    sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" spring-boot-app-manifests/deployment.yml
+            sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" spring-boot-app-manifests/deployment.yml
 
-                    git add spring-boot-app-manifests/deployment.yml
-                    git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-                    git push https://${GITHUB_TOKEN}@github.com/anoopofficial91-create/cicd-automation-jenkins HEAD:main
-                '''
-            }
-        }
+            git add spring-boot-app-manifests/deployment.yml
+            git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+            git push https://${GITHUB_TOKEN}@github.com/anoopofficial91-create/cicd-automation-jenkins HEAD:main
+        '''
+    }
+}
     }
 
     post {
