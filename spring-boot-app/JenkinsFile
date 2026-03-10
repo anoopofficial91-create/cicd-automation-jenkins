@@ -7,14 +7,14 @@ pipeline {
     }
 
     environment {
-        GITHUB_TOKEN = credentials('github')   // must be Secret Text
+        GITHUB_TOKEN = credentials('github')   // GitHub PAT stored as Secret Text
     }
 
     options {
         skipDefaultCheckout(false)   // checkout once globally
     }
 
-stages {
+    stages {
         stage('Checkout') {
             steps {
                 git branch: 'main',
@@ -22,8 +22,6 @@ stages {
             }
         }
 
-
-    stages {
         stage('Build and Test') {
             steps {
                 dir('spring-boot-app') {
@@ -80,9 +78,6 @@ stages {
                     git push https://${GITHUB_TOKEN}@github.com/anoopofficial91-create/cicd-automation-jenkins HEAD:main
                 '''
             }
-
+        }
     }
 }
-}
-
-    
