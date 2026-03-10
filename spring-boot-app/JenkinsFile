@@ -58,20 +58,22 @@ pipeline {
         }
 
         stage('Update Deployment File') {
-            steps {
-                dir('spring-boot-app-manifests') {
-                    sh '''
-                        git config user.email "anoopofficial91@gmail.com"
-                        git config user.name "Anoop VP"
+    steps {
+        git branch: 'main',
+            url: 'https://github.com/anoopofficial91-create/cicd-automation-jenkins.git'
 
-                        sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" deployment.yml
-
-                        git add deployment.yml
-                        git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-                        git push https://${GITHUB_TOKEN}@github.com/anoopofficial91-create/cicd-automation-jenkins HEAD:main
-                    '''
-                }
-            }
+        dir('spring-boot-app-manifests') {
+            sh '''
+                git config user.email "anoopofficial91@gmail.com"
+                git config user.name "Anoop VP"
+                sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" deployment.yml
+                git add deployment.yml
+                git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+                git push https://${GITHUB_TOKEN}@github.com/anoopofficial91-create/cicd-automation-jenkins HEAD:main
+            '''
         }
     }
 }
+}
+}
+    
